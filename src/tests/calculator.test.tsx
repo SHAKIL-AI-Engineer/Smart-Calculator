@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import App from '../App';
+import { Calculator as App } from '../components/Calculator';
 import { HISTORY_KEY } from '../storage/localHistoryRepository';
 afterEach(() => vi.restoreAllMocks());
 const display = () => screen.getByLabelText('Calculator display');
@@ -67,14 +67,6 @@ describe('complete calculator flows', () => {
     expect(within(history()).getByText('= 4')).toBeInTheDocument();
     expect(
       screen.getByText(/History storage is unavailable/),
-    ).toBeInTheDocument();
-  });
-  it('switches themes using an accessible control', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(screen.getByRole('button', { name: 'Use dark theme' }));
-    expect(
-      screen.getByRole('button', { name: 'Use light theme' }),
     ).toBeInTheDocument();
   });
 });

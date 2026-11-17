@@ -1,77 +1,86 @@
-# Smart-Calculator
+# SmartCalc Pro v2.0
 
-**A little clarity. In every calculation.** A responsive, browser-only calculator built from the SmartCalc v1.0 architecture masterplan with React, TypeScript, Vite, and `decimal.js`.
+**Your everyday, elevated.** A scientific calculator with a dedicated expression parser, 24-digit decimal mathematics, persistent memory/settings, and a private 200-entry history. React + TypeScript + Vite + decimal.js; no backend, account, or API key.
 
-বাংলায়: সঠিক দশমিক গণনা, কিবোর্ড নিয়ন্ত্রণ ও ডিভাইসে সংরক্ষিত হিস্টরিসহ একটি ক্যালকুলেটর। গণনার জন্য সার্ভার বা লগইন প্রয়োজন নেই।
+বাংলায়: আগের ক্যালকুলেটরের ওপর ভিত্তি করে Scientific Engine, DEG/RAD, মেমরি এবং সার্চযোগ্য হিস্টরি যোগ করা হয়েছে। v1-এর হিস্টরি অক্ষত রেখে নতুন সংস্করণে কপি করা হয়।
 
-## Run locally (Windows 11 / VS Code)
+## Run on Windows 11 / VS Code
 
-Install **Node.js 24 LTS** and Git. Open the VS Code terminal (PowerShell or Bash):
+Install Node.js **24 LTS** and Git. In the VS Code PowerShell terminal:
 
 ```sh
 git clone https://github.com/SHAKIL-AI-Engineer/Smart-Calculator.git
 cd Smart-Calculator
+git switch feat/smartcalc-v2
 npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite, usually http://localhost:5173. No API key, database, or environment variables are needed.
+The v2 implementation is on its own feature branch while release PRs are reviewed. Open the Vite URL, usually http://localhost:5173.
 
-## Features
+## Calculate
 
-- Addition, subtraction, multiplication, and division with decimal-safe arithmetic.
-- Clear, backspace, decimal input, negative numbers, and controlled validation errors.
-- Keyboard and touch controls, visible focus, screen-reader result announcements.
-- Up to 50 successful calculations saved locally, newest first, with clear-history control.
-- Light/dark themes; initial theme follows your system. Theme changes last for the current page session.
-- Responsive layout, including 320px-wide screens.
+Type directly into the expression field or use the keypad. Press Enter or = to calculate. Functions use parentheses; multiplication is explicit.
 
-| Key                | Action                      |
-| ------------------ | --------------------------- |
-| `0–9`, `.`         | Enter a number              |
-| `+`, `-`, `*`, `/` | Choose an operator          |
-| `Enter`, `=`       | Calculate                   |
-| `Backspace`        | Remove last digit           |
-| `Escape`, `Delete` | Reset calculator            |
-| `N`                | Toggle sign                 |
-| `Tab`, `Shift+Tab` | Move focus between controls |
+| Expression        | Mode   | Result                               |
+| ----------------- | ------ | ------------------------------------ |
+| `2+3*4`           | Either | `14`                                 |
+| `2^3^2`           | Either | `512`                                |
+| `-2^2`            | Either | `-4`                                 |
+| `sin(30)`         | DEG    | `0.5`                                |
+| `sin(pi/2)`       | RAD    | `1`                                  |
+| `sqrt(81)` / `5!` | Either | `9` / `120`                          |
+| `root(27,3)`      | Either | `3`                                  |
+| `0.1+0.2`         | Either | `0.3`                                |
+| `200*10%`         | Either | `20`                                 |
+| `Ans*2`           | Either | Twice the previous successful answer |
 
-Enter activates a focused button using normal browser behavior; `=` always calculates. Use `N` or the ± button for negative operands; `-` selects subtraction.
+Functions: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `log` (base 10), `ln`, `sqrt`, `cbrt`, `root(value,degree)`, `abs`, `inv`, `square`, `cube`, `pow10`, `exp`, `floor`, `ceil`, `round`, `trunc`, `sign`. Constants: `pi`/`π`, `e`, `Ans`. Operators: `+ - * / ^ mod`, postfix `!` and `%`, parentheses, scientific notation such as `1e-3`. Unicode ×, ÷, −, √ are accepted.
 
-## Arithmetic policy
+Keypad function buttons wrap an existing complete expression or selected text; otherwise they start a function call. Use `)` to close a call; `root` takes two comma-separated arguments. Number/operator buttons insert at the last selected text range. After a result, an operator continues from full-precision Ans; a number starts a new expression. Standard mode hides the scientific keys while keeping the expression engine available.
 
-One operation uses two operands. Enter `5 + 3 =`, then choose another operator to reuse the result; expressions and precedence are outside v1. Repeated operators replace the pending operator before the second operand. Repeated equals does nothing.
+## Memory, history, and settings
 
-Inputs allow 16 significant digits and 10 fractional digits. Results allow 16 integer digits. The engine uses 50-digit decimal precision; all displayed/stored results round to at most 10 fractional digits using half-up rounding, and negative zero becomes `0`. This consistently applies the division display policy to other operations whose result has more than 10 fractional digits. Trailing fractional zeros are removed from results. For example, `0.1 + 0.2 = 0.3` and `10 / 3 = 3.3333333333`.
+- **MS / MR / MC / M+ / M−** store, recall, clear, add, and subtract full-precision memory. Clear input does not clear memory or Ans.
+- Successful calculations store expression, full result, DEG/RAD, timestamp, pin state, and the original Ans context. Replay restores that context and angle before evaluating again.
+- Search by expression/result; filter pins; replay, delete, clear with confirmation, or export all stored entries as JSON. Pins sort first and are protected from normal eviction; if all 200 entries are pinned, the oldest pin is evicted to admit a new calculation.
+- DEG/RAD, 8/12/16 significant display digits, theme, animation preference, memory, Ans, and history persist in `smartcalc.workspace.v2`.
+- The original `smartcalc.history.v1` key is preserved as a backup. V2 reads it once when no v2 workspace exists. Clearing v2 history writes an empty workspace rather than remigrating the backup. Export uses a local download; no data is uploaded.
 
-A result may have more than 16 significant digits while still meeting the result integer limit. Such a result can be viewed and saved, but reusing it as an operand is rejected with an explanation. Start a new calculation with AC or a digit.
+Desktop uses a persistent history sidebar. Below 1024px, use the history toggle to open an inline history panel; no modal traps keyboard focus. Below 640px, scientific keys use a compact six-column layout. Motion uses CSS only and respects system reduced-motion settings as well as the app toggle. Calculations run entirely offline once the app is loaded; this release does not install a PWA or service worker. Optional Google Fonts requests have system-font fallbacks.
 
-History uses the versioned localStorage key `smartcalc.history.v1`. Storage denial, quota errors, and malformed records are handled without interrupting calculation. Stored entries are validated before use. History is local to this browser and origin; clearing browser data removes it. Fonts are requested from Google Fonts with local fallbacks; calculation data is never sent there.
+## Numerical and safety policy
 
-## Verify and build
+The scientific engine uses an isolated decimal.js constructor with **24 significant digits**, half-up rounding, and presentation at 8, 12, or 16 significant digits. Scientific functions are numerical approximations; v2 is a real-number calculator. Non-real roots/powers, invalid logs/inverse trig, tangent poles, and division/modulo by zero return typed errors. Percentage always divides its operand by 100: `200+10% = 200.1`.
+
+Limits: 512 expression characters, 256 tokens, 32 recursive parser levels, 24 significant digits per literal, absolute values at most `1e1000`, minimum exponent −1000 (arithmetic underflow becomes zero), factorial integers 0–200, integer root degrees −1000–1000 excluding zero, and exponents with absolute value ≤1000. Negative bases require integer powers; use odd roots for negative fractional roots. `0^0` is rejected. Remainder follows dividend sign. `round` uses half-up; `trunc` moves toward zero. Trigonometric values near finite-precision π quadrant boundaries are stabilized at zero; tangent is rejected when its cosine magnitude is below `1e-22`.
+
+Input passes through tokenizer → Pratt parser → AST → evaluator, using allowlisted operations. There is no `eval`, `new Function`, variable assignment, network access, or arbitrary property access. The scientific engine does not import React or storage. V1 arithmetic, reducer, and repository modules remain available with regression tests.
+
+## Keyboard and verification
+
+Type numbers/functions/operators in the expression field. **Enter / =** calculates, **Escape** clears input or closes an open panel, **F9** toggles sign, and **Backspace** edits. Native text selection, copy/paste, and Tab navigation work. Enter/Space activates focused buttons; result/error announcements use a dedicated live status.
 
 ```sh
 npm test
 npm run build
+npm run format:check
 npx playwright install chromium
 npm run test:e2e
 npm run preview
 ```
 
-On Linux, Playwright may also need `npx playwright install --with-deps chromium`. Unit/component tests use Vitest and Testing Library. Browser tests cover desktop/mobile calculation, reload persistence, clearing, recovery, and layout overflow. CI runs tests and the production build on pushes and pull requests.
-
-`npm run build` produces `dist/`, ready for a static host. Relative asset paths support hosting in a subdirectory. No live deployment is configured by this repository.
+Linux may require `npx playwright install --with-deps chromium`. The production build is `dist/` and supports static hosting. Build/test artifacts, dependencies, and local environment files are ignored by Git. CI runs unit/component tests, the build, and desktop/mobile browser tests.
 
 ## Architecture and learning guide
 
-Dependencies flow from **UI → reducer → domain**. The domain has no React or storage imports. A separate history service creates entries; the storage adapter validates, serializes, and handles failures. React effects save successful completions once, including in StrictMode.
-
-- [Requirements and acceptance criteria](docs/requirements.md)
-- [Architecture decisions](docs/architecture.md)
+- [Requirements](docs/requirements.md)
+- [Architecture decisions and migration](docs/architecture.md)
 - [High-level design](docs/hld.md)
-- [Low-level design and data model](docs/lld.md)
-- [Test plan and manual checks](docs/test-plan.md)
+- [Low-level design and schema](docs/lld.md)
+- [Test plan](docs/test-plan.md)
+- [Preserved v1 architecture](docs/v1/architecture.md)
 
-বাংলায়: প্রথমে `domain/`-এর বিশুদ্ধ ফাংশনগুলো পড়ুন। তারপর `state/`-এর reducer, `storage/`-এর সংরক্ষণ পদ্ধতি এবং শেষে `components/`-এর UI দেখুন। এতে প্রতিটি স্তরের দায়িত্ব আলাদা করে বোঝা সহজ হবে।
+বাংলায়: `domain/scientific/`-এ tokenizer, parser ও evaluator আছে। `state/scientificReducer.ts` ইনপুট, মেমরি ও হিস্টরি নিয়ন্ত্রণ করে। `storage/scientificRepository.ts` ব্রাউজারে ডেটা সংরক্ষণ করে। UI এই স্তরগুলো ব্যবহার করে, কিন্তু গণনার নিয়ম UI-এর ওপর নির্ভর করে না।
 
-Scientific operations, expression parsing, accounts, and cloud synchronization are future work.
+Complex numbers, matrices, graphing, symbolic algebra, login, and cloud synchronization remain future modules.

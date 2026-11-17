@@ -1,28 +1,29 @@
-# Architecture decisions
+# SmartCalc v2 architecture decisions
 
-| Decision       | Choice                                    | Rationale                                          |
-| -------------- | ----------------------------------------- | -------------------------------------------------- |
-| Application    | Static browser app                        | Works on desktop/mobile with no server             |
-| Language/build | TypeScript + Vite                         | Strict contracts and small development setup       |
-| UI             | React components and plain CSS            | Reusable controls; no unnecessary UI framework     |
-| State          | useReducer                                | Explicit phases and predictable edge cases         |
-| Arithmetic     | decimal.js, isolated 50-digit constructor | Exact decimal inputs and products; stable rounding |
-| Persistence    | Versioned localStorage repository         | Fits 50 local entries, no personal data collection |
-| Tests          | Vitest, Testing Library, Playwright       | Domain, interactions, browser journeys             |
-| Delivery       | Static dist build                         | Portable to static hosting; no runtime secrets     |
+## Upgrade boundary
 
-The domain depends on decimal.js only. State depends on domain. Components depend on state, a history service, and the repository. Storage does not affect arithmetic results.
+V2 adds `domain/scientific/`, `scientificReducer`, `scientificRepository`, and scientific UI components. Existing v1 domain, reducer, history service/repository, and UI components remain for compatibility tests. The application entry renders the scientific workspace. Historical v1 docs are in `docs/v1/`.
 
-## Boundary decisions
+## Decisions
 
-The supplied specification defines a division rounding policy and a maximum of 10 input decimal places. For consistent display, every completed result is rounded half-up to 10 fractional places. Internal arithmetic is exact within its 50-digit precision before formatting. Historical result strings contain this formatted value.
+| Choice                           | Reason                                                                            |
+| -------------------------------- | --------------------------------------------------------------------------------- |
+| Custom Pratt parser and AST      | Controlled grammar, correct precedence, explicit allowlist                        |
+| decimal.js precision 24          | Decimal-safe arithmetic and scientific functions without native Number conversion |
+| Pure reducer                     | Predictable expression, result, memory, history, settings transitions             |
+| Metadata supplied in actions     | UUID/time generation stays outside pure reducer execution                         |
+| Versioned localStorage workspace | Persist history/context/settings together in one atomic write                     |
+| Preserve v1 storage key          | Existing data remains available for rollback or manual export                     |
+| Plain CSS + CSS transitions      | Matches the supplied package direction without extra UI/motion dependencies       |
+| Inline mobile history panel      | Keyboard-accessible secondary region without modal focus trapping                 |
+| Static build                     | Existing Vercel/static-host workflow stays usable                                 |
 
-A result may have 16 integer digits and 10 fractional digits. The stricter operand policy still applies when reusing it: values over 16 significant digits cannot become a new input. The UI explains this rather than silently losing precision.
+Scientific errors use SYNTAX, DOMAIN, DIVISION_BY_ZERO, and LIMIT codes. Storage errors are availability flags and never interrupt arithmetic. Failed calculations do not become history or overwrite Ans. Display rounding does not change Ans, memory, or replay values.
 
-React's reducer is pure: it creates no UUIDs, timestamps, or storage writes. The controller observes completion revisions, creates one history entry outside state updater callbacks, and persists history in a separate effect. A revision guard prevents duplicate StrictMode entries.
+The core domain imports neither React nor localStorage. UI dispatches typed actions; state invokes domain functions; the storage boundary validates/serializes persisted state. No arbitrary JavaScript expression execution occurs.
 
-## Future changes
+## Migration and release
 
-An expression parser belongs in domain modules for precedence/brackets. Authentication and synchronized history would add a backend repository with ownership controls; they would not change arithmetic responsibilities. SQL decimal precision and scale would need to match an explicitly revised calculation policy.
+With no v2 key, valid v1 entries become expression entries with DEG and answer context 0. The original key is never removed. The next v2 save persists a version-2 workspace, even when empty. Thus clearing history does not restore legacy entries on reload. LocalStorage can fail; users receive a notice while in-memory calculation continues.
 
-বাংলায়: গণনার নিয়ম UI বা স্টোরেজের ওপর নির্ভর করে না। তাই পরে ডিজাইন পরিবর্তন বা ব্যাকএন্ড যোগ করলেও মূল গণনার নিয়ম আলাদা রাখা সম্ভব।
+Keep v2 in its own branch and review its diff against v1. The main branch requires explicit publication approval from the user; this change does not bypass that existing restriction. Deploy the verified v2 source through the existing Vercel project when releasing. Git auto-deployment additionally requires Vercel GitHub integration access to the repository.

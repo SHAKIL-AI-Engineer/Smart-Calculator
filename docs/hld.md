@@ -1,30 +1,26 @@
-# High-level design
+# High-level design — scientific edition
 
-## Runtime flow
+## Calculation flow
 
-1. Touch, mouse, or keyboard creates a typed action.
-2. The React controller dispatches to the calculator reducer.
-3. The reducer validates state/input and calls the domain arithmetic engine on equals.
-4. The domain validates operands, computes with decimal.js, checks overflow, and formats the result.
-5. React renders the expression, result, or controlled error.
-6. For each successful completion revision, the history service creates a timestamped UUID entry.
-7. The repository serializes the latest 50 entries in one localStorage write. Failures produce a storage notice.
+1. Editable expression, keypad, or keyboard dispatches a typed reducer action.
+2. Tokenizer accepts numeric literals, identifiers, and known symbols within limits.
+3. Pratt parser creates a bounded abstract syntax tree.
+4. Evaluator walks the AST with a DEG/RAD and Ans context, using decimal.js.
+5. Validation returns a typed error or a canonical full-precision decimal string.
+6. UI formats the result to the selected display precision and announces completion/errors.
+7. Successful evaluation updates Ans and adds one timestamped history entry with its original context.
+8. The repository atomically stores settings, memory, Ans, and the latest 200 history entries.
 
-All modules execute in the browser. No calculation API or database server is needed. Static assets are served by Vite during development or by a static host in production. Optional external font loading uses Google Fonts; system fonts remain usable offline.
+## Module responsibilities
 
-## Components
+| Module               | Role                                                                         |
+| -------------------- | ---------------------------------------------------------------------------- |
+| ScientificWorkspace  | Persistent-state lifecycle, expression selection, settings, keyboard, layout |
+| ScientificKeypad     | Scientific and numeric controls, function templates                          |
+| ScientificHistory    | Search/filter, replay, pin, deletion, clear confirmation, export             |
+| Tokenizer/parser     | Safe syntax and precedence; no browser dependencies                          |
+| Evaluator            | Real-number functions, decimal precision, domain/range checks                |
+| scientificReducer    | Editing/result transitions, memory, context replay, history cap              |
+| scientificRepository | Schema validation, v1 migration, local serialization, local download         |
 
-| Module                  | Responsibility                                                 |
-| ----------------------- | -------------------------------------------------------------- |
-| App                     | Page shell, theme, keyboard guide                              |
-| Calculator              | Reducer, keyboard listener, history orchestration              |
-| CalculatorDisplay       | Expression, number display, accessible status                  |
-| CalculatorKeypad/Button | Native semantic buttons dispatching actions                    |
-| HistoryPanel            | Local entries, clear action, persistence notice                |
-| Domain                  | Input validation, arithmetic, formatting, shared types         |
-| History service         | Create newest-first history entries with metadata              |
-| Local repository        | Validate loaded records, bound history, catch storage failures |
-
-## Failure handling
-
-Validation and arithmetic errors stay in the current calculation so users can correct the operand. A successful calculation alone increments the completion revision. Storage failures preserve in-memory history. Invalid stored records are discarded; the repository does not trust JSON shape or result values.
+All calculation and persistence logic runs in the browser. Hosting serves static assets. The only optional external asset is Google Fonts; fonts fall back locally. Future cloud sync would add a separate repository boundary and authenticated ownership checks, not rewrite scientific mathematics.
